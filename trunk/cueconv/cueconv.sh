@@ -5,61 +5,82 @@
 #
 # Ensure that your cue file is *UTF-8* encoding. NO GB* id3!
 #
-# Required: mac, flac, lame, cuetools, id3v2(or mutagen), shntool, vorbis-tools
+# Required: mac, flac, lame, cuetools, id3v2, shntool, vorbis-tools
 #
 # Edited from Brian Archive CUE/FLAC Splitter v0.1
 # ;-) vvoody <wxj.g.sh{at}gmail.com>
-# ogg convert function added at 2008-10-19
-#     by Grissiom <chaos.proton{at}gmail.com> 
+#     grissiom <chaos.proton{at}gmail.com>
 
 echo_usage() {
 	echo
-	echo "usage: $0 [options [encoding options]] <cuefile>"
-	echo
-	echo "OPTIONS:"
-	echo "    mp3: split sndfile into mp3 files."
+	echo "usage: $0 [encoding_type [encoding_options]] <cuefile>"
+	echo 
+	echo "encoding_type:"
+	echo "    mp3: split sndfile into mp3 files.(default)"
 	echo "    ogg: split sndfile into ogg files."
-	echo "    encoding options: options pass to the encoder,"
+	echo
+	echo "encoding_options: options pass to the encoder,"
         echo "                  must enclosed in quotation marks"
+	echo
+	echo "If you want to specify the encoding options, you must specify the encoding type."
+	echo "We use lame for mp3 encoding and oggenc(provided by vorbis-tools) for ogg ones."
 	echo
 }
 
-case $1 in
-	"--help" )
-		echo_usage
-		exit 0
-		;;
+######################################################
+# parameter parse begin
+######################################################
+
+if [ $1 = "--help" ]; then
+	echo_usage
+	exit 0
+fi
+
+# -V2 is the recommended option for lame.(you can see it by typing lame --help)
+case $# in
+1 )
+	cuefile=$1
+	ext="mp3"
+	enopt="-V2"
+	;;
+2 )
+	ext=$1
+	if [ $ext = "mp3" ]; then
+		enopt="-V2"
+	fi
+	cuefile=$2
+	;;
+3 )
+	ext=$1
+	enopt=$2
+	cuefile=$3
+	;;
+* )
+	echo_usage
+	exit 1
+	;;
+esac
+
+case $ext in
 	"mp3" )
-		ext='mp3'
-		encmd='cust ext=mp3 lame -b 192 - %f'
+		encmd="cust ext=mp3 lame $enopt - %f"
 		;;
 	"ogg" )
-		ext='ogg'
-		encmd='cust ext=ogg oggenc - -o %f'
-		;;
-	* )
-		echo_usage
-		exit 1
+		encmd="cust ext=ogg oggenc $enopt - -o %f"
 		;;
 esac
 
-
-if [ $# -eq 2 ]; then
-	cuefile=$2
-elif [ $# -eq 3 ]; then
-	enopt=$2
-	cuefile=$3
-else
-	echo_usage
-	exit 1
-fi
-
 sndfile=`egrep '^FILE' $cuefile | awk -F'"' '{print $2}'`
+
 # According to http://digitalx.org/cuesheetsyntax.php ,
 # the file name may not be enclosed  in quotation marks.
 if [ -z $sndfile ]; then
 	sndfile=`egrep '^FILE' $cuefile | awk -F' ' '{print $2}'`
 fi
+
+######################################################
+# parameter parse finished, we can begin the work now ;)
+######################################################
 
 tracks=$(cueprint -d '%N' "$cuefile")
 genre=$(cueprint -d '%G' "$cuefile")
@@ -86,7 +107,6 @@ echo "=================================================="
 
 # Split and convert the single ape/flac file.
 # Each mp3 name is like: "07.Yesterday Once More.mp3"
-# Default bit rate is 128, you can customize it by using -b option.
 # More output format, see `man shntool`
  shntool split -f "$cuefile" -t '%n.%t' -o "$encmd" "$sndfile"
 
@@ -96,8 +116,9 @@ if [ -f "00.pregap."$ext ]; then
 	echo "00.pregap.$ext found! Removed it."
 fi
 
-
 # Write the id3v2 into the output files.
+# Either mid3v2 or id3tag will corrupt ogg files...
+# And it seems that ogg files have a different type of tagging.
 acount=1
 for outfile in *.$ext; do
 	if [ $ext = 'mp3' ]; then
