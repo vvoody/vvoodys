@@ -9,12 +9,16 @@
 #
 # Edited from Brian Archive CUE/FLAC Splitter v0.1
 # ;-) vvoody <wxj.g.sh{at}gmail.com>
-#     grissiom <chaos.proton{at}gmail.com>
+# heavily edited by Grissiom <chaos.proton{at}gmail.com>
 
-echo_usage() {
+echo_usage()
+{
 	echo
-	echo "usage: $0 [encoding_type [encoding_options]] <cuefile>"
+	echo "usage: $0 [option] [encoding_type [encoding_options]] <cuefile>"
 	echo 
+	echo "option:"
+	echo "    -q: be quiet"
+	echo
 	echo "encoding_type:"
 	echo "    mp3: split sndfile into mp3 files.(default)"
 	echo "    ogg: split sndfile into ogg files."
@@ -27,13 +31,34 @@ echo_usage() {
 	echo
 }
 
+# make the world more colorful ;)
+# I currently use
+# yellow for progress messages and
+# blue   for info messages and
+# green  for Done messages and
+# red    for the lovely face in the end ;-)
+# We may use red for error messages but 
+# it has not implemented yet...
+red='\e[0;31;1m'
+green='\e[0;32;1m'
+yellow='\e[0;33;1m'
+blue='\e[0;34;1m'
+clr_normal='\e[0m'
+
 ######################################################
 # parameter parse begin
 ######################################################
 
-if [ $1 = "--help" ]; then
+if [[ $1 = "--help" ]]; then
 	echo_usage
 	exit 0
+fi
+
+if [[ $1 = "-q" ]]; then
+	quiet=1
+	shift
+else
+	quiet=0
 fi
 
 # -V2 is the recommended option for lame.(you can see it by typing lame --help)
@@ -45,7 +70,7 @@ case $# in
 	;;
 2 )
 	ext=$1
-	if [ $ext = "mp3" ]; then
+	if [[ $ext = "mp3" ]]; then
 		enopt="-V2"
 	fi
 	cuefile=$2
@@ -68,84 +93,140 @@ case $ext in
 	"ogg" )
 		encmd="cust ext=ogg oggenc $enopt - -o %f"
 		;;
+	* )
+	echo_usage
+	exit 1
 esac
-
-sndfile=`egrep '^FILE' $cuefile | awk -F'"' '{print $2}'`
-
-# According to http://digitalx.org/cuesheetsyntax.php ,
-# the file name may not be enclosed  in quotation marks.
-if [ -z $sndfile ]; then
-	sndfile=`egrep '^FILE' $cuefile | awk -F' ' '{print $2}'`
-fi
 
 ######################################################
 # parameter parse finished, we can begin the work now ;)
 ######################################################
 
+if file "$cuefile" | egrep -q 'UTF-8|ASCII'; then
+	rm_ufile=0
+else
+	iconv -f GB18030 -t UTF-8 "$cuefile" -o "${cuefile}-u.cue"
+	cuefile="${cuefile}-u.cue"
+	rm_ufile=1
+fi
+
+echo -e ${yellow}"extract info from the cue file..."${clr_normal}
+
+sndfile=`egrep '^FILE' "$cuefile" | awk -F'"' '{print $2}'`
+# According to http://digitalx.org/cuesheetsyntax.php ,
+# the file name may not be enclosed  in quotation marks.
+if [ -z "$sndfile" ]; then
+	sndfile=`egrep '^FILE' "$cuefile" | awk -F' ' '{print $2}'`
+fi
+
 tracks=$(cueprint -d '%N' "$cuefile")
+echo -e ${blue}${tracks}" tracks altogether."${clr_normal}
+
 genre=$(cueprint -d '%G' "$cuefile")
+# many cue sheets put the genre and date info into REM section(the comment section),
+# we can grab the info in this way.
+if [ -z $genre ]; then
+	genre=`egrep '^REM GENRE ' "$cuefile" | cut -c 11-`
+fi
+date=`egrep '^REM DATE ' "$cuefile" | cut -c 10-`
+
+# extract comments
+comments=`egrep '^REM ' "$cuefile" | sed -e '/^REM GENRE/d; /^REM DATE/d; s/REM //; s/ /=/'`
 
 # Store the idv3 info. We will write them to the mp3s later.
 id3count=1
-echo "Disk Genre: "$genre
-echo $tracks "tracks altogether."
-echo
+if [ $quiet -eq 0 ]; then
+	echo "Disk Genre: "$genre
+	echo
+fi
 while [ $id3count -le $tracks ]; do
 	artist[$id3count]=$(cueprint -n$id3count -t '%p' "$cuefile")
 	album[$id3count]=$(cueprint -n$id3count -t '%T' "$cuefile")
 	tracknum[$id3count]=$(cueprint -n$id3count -t '%02n' "$cuefile")
 	title[$id3count]=$(cueprint -n$id3count -t '%t' "$cuefile")
-	echo "Artist      - ${artist[$id3count]}"
-	echo "Album       - ${album[$id3count]}"
-	echo "Track No.   - ${tracknum[$id3count]}"
-	echo "Track Title - ${title[$id3count]}"
-	echo
+	if [ $quiet -eq 0 ]; then
+		echo "Artist      - ${artist[$id3count]}"
+		echo "Album       - ${album[$id3count]}"
+		echo "Track No.   - ${tracknum[$id3count]}"
+		echo "Track Title - ${title[$id3count]}"
+		echo
+	fi
 	id3count=$[$id3count + 1]
 done
 
-echo "=================================================="
+echo -e ${green}"Done."${clr_normal}
 
+if [ $quiet -eq 0 ]; then
+	echo "=================================================="
+fi
 # Split and convert the single ape/flac file.
 # Each mp3 name is like: "07.Yesterday Once More.mp3"
 # More output format, see `man shntool`
- shntool split -f "$cuefile" -t '%n.%t' -o "$encmd" "$sndfile"
+# \:*?"<>|/ are invalid filename characters in DOS,
+# / is invalid filename character in UNIX. So convert them or we couldn't split the file.
+echo -e ${yellow}"split and convert ${blue}$sndfile"${clr_normal}
+echo -e ${yellow}"into ${blue}$ext ${yellow}files"${clr_normal}
+shntool split -f "$cuefile" -t '%n.%t' -m '\-:-*x?-"-/_<->-|-' -o "$encmd" "$sndfile"
 
 # Remove the pregrap file, or it will make write the id3 incorrectly.
 if [ -f "00.pregap."$ext ]; then
 	rm -f 00.pregap.$ext
-	echo "00.pregap.$ext found! Removed it."
+	if [ $quiet -eq 0 ]; then
+		echo "00.pregap.$ext found! Removed it."
+	fi
 fi
 
+echo -e ${yellow}"tag the files..."${clr_normal}
 # Write the id3v2 into the output files.
 # Either mid3v2 or id3tag will corrupt ogg files...
 # And it seems that ogg files have a different type of tagging.
 acount=1
 for outfile in *.$ext; do
+	if [ $quiet -eq 0 ]; then
+		echo "=================================================="
+		echo "tagging ${outfile}:"
+		echo "Artist      - ${artist[$acount]}"
+		echo "Album       - ${album[acount]}"
+		echo "Track No.   - ${tracknum[acount]}"
+		echo "Total track - ${tracks}"
+		echo "Track Title - ${title[acount]}"
+		echo "Genre       - ${genre}"
+		echo "Date        - ${date}"
+		echo 
+	fi
 	if [ $ext = 'mp3' ]; then
 # 		mid3v2 --artist="${artist[$acount]}" \
 # 		--album="${album[acount]}" \
 # 		--track="${tracknum[acount]}" \
 # 		--song="${title[acount]}" \
 # 		"$outfile"
-		id3tag \
+		id3tag 1>/dev/null \
 		--artist="${artist[$acount]}" \
 		--album="${album[acount]}" \
 		--track="${tracknum[acount]}" \
 		--song="${title[acount]}" \
 		--total="${tracks}" \
 		--genre="${genre}" \
+		--year="${date}" \
 		"$outfile"
 	elif [ $ext = 'ogg' ]; then
-		vorbiscomment -aR \
-		-t "Artist=${artist[$acount]}" \
-		-t "Album=${album[acount]}" \
-		-t "Title=${title[acount]}" \
-		-t "Genre=${genre}" \
-		-t "totaltracks=${tracks}" \
-		-t "tracknumber=${tracknum[acount]}" \
-		"$outfile"
+		cat <<-EOF 2>/dev/null | vorbiscomment -a "$outfile" 1>/dev/null
+		artist=${artist[$acount]}
+		album=${album[acount]}
+		title=${title[acount]}
+		genre=${genre}
+		totaltracks=${tracks}
+		tracknumber=${tracknum[acount]}
+		date=${date}
+		$comments
+		EOF
 	fi
 	acount=$[$acount + 1]
 done
+
+echo -e ${green}"Done. Enjoy your music. ;${yellow}-${red})"${clr_normal}
+if [ $rm_ufile -eq 1 ]; then
+	rm "$cuefile"
+fi
 
 # End of script.
