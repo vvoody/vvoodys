@@ -14,7 +14,7 @@
 echo_usage()
 {
 	echo
-	echo "usage: $0 [option] [encoding_type [encoding_options]] <cuefile>"
+	echo "usage: $0 [option] [encoding_type [encoding_options]] <cuefile> [flac_or_ape_file]"
 	echo 
 	echo "option:"
 	echo "    -q: be quiet"
@@ -29,7 +29,16 @@ echo_usage()
 	echo "If you want to specify the encoding options, you must specify the encoding type."
 	echo "We use lame for mp3 encoding and oggenc(provided by vorbis-tools) for ogg ones."
 	echo
+	echo "If your locale is not UTF-8, please define the flac/ape file name followed the <cuefile>."
+	echo
 }
+
+# UTF-8
+locale | egrep -i "UTF-8" > /dev/null
+if [ ! $? -eq 0 ]; then
+    echo "Your locale is not UTF-8, "
+    echo "please define the flac/ape file name followed the <cuefile>."
+fi
 
 # make the world more colorful ;)
 # I currently use
@@ -49,6 +58,7 @@ clr_normal='\e[0m'
 # parameter parse begin
 ######################################################
 
+sndfile_flag=0
 if [[ $1 = "--help" ]]; then
 	echo_usage
 	exit 0
@@ -64,7 +74,7 @@ fi
 # -V2 is the recommended option for lame.(you can see it by typing lame --help)
 case $# in
 1 )
-	cuefile=$1
+	cuefile="$1"
 	ext="mp3"
 	enopt="-V2"
 	;;
@@ -73,12 +83,19 @@ case $# in
 	if [[ $ext = "mp3" ]]; then
 		enopt="-V2"
 	fi
-	cuefile=$2
+	cuefile="$2"
 	;;
 3 )
 	ext=$1
-	enopt=$2
-	cuefile=$3
+	enopt="$2"
+	cuefile="$3"
+	;;
+4 )
+	ext=$1
+	enopt="$2"
+	cuefile="$3"
+	sndfile="$4"
+	sndfile_flag=1
 	;;
 * )
 	echo_usage
@@ -112,11 +129,13 @@ fi
 
 echo -e ${yellow}"extract info from the cue file..."${clr_normal}
 
-sndfile=`egrep '^FILE' "$cuefile" | awk -F'"' '{print $2}'`
+if [ sndfile_flag -eq 0 ]; then
+    sndfile=`egrep '^FILE' "$cuefile" | awk -F'"' '{print $2}'`
 # According to http://digitalx.org/cuesheetsyntax.php ,
 # the file name may not be enclosed  in quotation marks.
-if [ -z "$sndfile" ]; then
+    if [ -z "$sndfile" ]; then
 	sndfile=`egrep '^FILE' "$cuefile" | awk -F' ' '{print $2}'`
+    fi
 fi
 
 tracks=$(cueprint -d '%N' "$cuefile")
