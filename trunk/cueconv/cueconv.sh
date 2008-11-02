@@ -34,13 +34,6 @@ echo_usage()
 	echo
 }
 
-# UTF-8
-locale | egrep -i "UTF-8" > /dev/null
-if [ ! $? -eq 0 ]; then
-	echo "Your locale is not UTF-8, "
-	echo "please define the flac/ape file name followed the <cuefile>."
-fi
-
 # make the world more colorful ;)
 # I currently use
 # yellow for progress messages and
@@ -54,6 +47,18 @@ green='\e[0;32;1m'
 yellow='\e[0;33;1m'
 blue='\e[0;34;1m'
 clr_normal='\e[0m'
+
+# work around for issue1&2
+# FIXME: maybe `locale | egrep -i "UTF-8"` is not enough.
+# see this situation:
+# LC_ALL="zh_CN.GB18030"
+# LC_TIME="zh_CN.UTF-8"
+# we have to find out which LC realy matters....
+locale | egrep -i "UTF-8" > /dev/null
+if [ ! $? -eq 0 ]; then
+	echo "Your locale is not UTF-8, "
+	echo "please define the flac/ape file name followed the <cuefile>."
+fi
 
 ######################################################
 # parameter parse begin
