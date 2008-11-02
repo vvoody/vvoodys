@@ -3,13 +3,14 @@
 # Split the big single ape/flac file to mp3 or ogg files.
 # Lastly, write the id3(version 2) tag info into the mp3s or oggs.
 #
-# Ensure that your cue file is *UTF-8* encoding. NO GB* id3!
+# It will try to detect the encoding of the cue sheet with 'file' 
+# and convert it into UTF-8 encoding. But don't relay on it so much.
 #
 # Required: mac, flac, lame, cuetools, id3v2, shntool, vorbis-tools
 #
 # Edited from Brian Archive CUE/FLAC Splitter v0.1
 # ;-) vvoody <wxj.g.sh{at}gmail.com>
-# heavily edited by Grissiom <chaos.proton{at}gmail.com>
+#  ;) Grissiom <chaos.proton{at}gmail.com>
 
 echo_usage()
 {
@@ -24,7 +25,7 @@ echo_usage()
 	echo "    ogg: split sndfile into ogg files."
 	echo
 	echo "encoding_options: options pass to the encoder,"
-        echo "                  must enclosed in quotation marks"
+	echo "                  must enclosed in quotation marks"
 	echo
 	echo "If you want to specify the encoding options, you must specify the encoding type."
 	echo "We use lame for mp3 encoding and oggenc(provided by vorbis-tools) for ogg ones."
@@ -36,8 +37,8 @@ echo_usage()
 # UTF-8
 locale | egrep -i "UTF-8" > /dev/null
 if [ ! $? -eq 0 ]; then
-    echo "Your locale is not UTF-8, "
-    echo "please define the flac/ape file name followed the <cuefile>."
+	echo "Your locale is not UTF-8, "
+	echo "please define the flac/ape file name followed the <cuefile>."
 fi
 
 # make the world more colorful ;)
@@ -73,31 +74,31 @@ fi
 
 # -V2 is the recommended option for lame.(you can see it by typing lame --help)
 case $# in
-1 )
+	1 )
 	cuefile="$1"
 	ext="mp3"
 	enopt="-V2"
 	;;
-2 )
+	2 )
 	ext=$1
 	if [[ $ext = "mp3" ]]; then
 		enopt="-V2"
 	fi
 	cuefile="$2"
 	;;
-3 )
+	3 )
 	ext=$1
 	enopt="$2"
 	cuefile="$3"
 	;;
-4 )
+	4 )
 	ext=$1
 	enopt="$2"
 	cuefile="$3"
 	sndfile="$4"
 	sndfile_flag=1
 	;;
-* )
+	* )
 	echo_usage
 	exit 1
 	;;
@@ -105,11 +106,11 @@ esac
 
 case $ext in
 	"mp3" )
-		encmd="cust ext=mp3 lame $enopt - %f"
-		;;
+	encmd="cust ext=mp3 lame $enopt - %f"
+	;;
 	"ogg" )
-		encmd="cust ext=ogg oggenc $enopt - -o %f"
-		;;
+	encmd="cust ext=ogg oggenc $enopt - -o %f"
+	;;
 	* )
 	echo_usage
 	exit 1
@@ -130,12 +131,12 @@ fi
 echo -e ${yellow}"extract info from the cue file..."${clr_normal}
 
 if [ sndfile_flag -eq 0 ]; then
-    sndfile=`egrep '^FILE' "$cuefile" | awk -F'"' '{print $2}'`
-# According to http://digitalx.org/cuesheetsyntax.php ,
-# the file name may not be enclosed  in quotation marks.
-    if [ -z "$sndfile" ]; then
-	sndfile=`egrep '^FILE' "$cuefile" | awk -F' ' '{print $2}'`
-    fi
+	sndfile=`egrep '^FILE' "$cuefile" | awk -F'"' '{print $2}'`
+	# According to http://digitalx.org/cuesheetsyntax.php ,
+	# the file name may not be enclosed  in quotation marks.
+	if [ -z "$sndfile" ]; then
+		sndfile=`egrep '^FILE' "$cuefile" | awk -F' ' '{print $2}'`
+	fi
 fi
 
 tracks=$(cueprint -d '%N' "$cuefile")
@@ -147,6 +148,7 @@ genre=$(cueprint -d '%G' "$cuefile")
 if [ -z $genre ]; then
 	genre=`egrep '^REM GENRE ' "$cuefile" | cut -c 11-`
 fi
+# cueprint can't grap date info in cue sheets...
 date=`egrep '^REM DATE ' "$cuefile" | cut -c 10-`
 
 # extract comments
@@ -214,11 +216,11 @@ for outfile in *.$ext; do
 		echo 
 	fi
 	if [ $ext = 'mp3' ]; then
-# 		mid3v2 --artist="${artist[$acount]}" \
-# 		--album="${album[acount]}" \
-# 		--track="${tracknum[acount]}" \
-# 		--song="${title[acount]}" \
-# 		"$outfile"
+		# 		mid3v2 --artist="${artist[$acount]}" \
+		# 		--album="${album[acount]}" \
+		# 		--track="${tracknum[acount]}" \
+		# 		--song="${title[acount]}" \
+		# 		"$outfile"
 		id3tag 1>/dev/null \
 		--artist="${artist[$acount]}" \
 		--album="${album[acount]}" \
