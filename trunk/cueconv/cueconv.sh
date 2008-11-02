@@ -56,8 +56,8 @@ clr_normal='\e[0m'
 # we have to find out which LC realy matters....
 locale | egrep -i "UTF-8" > /dev/null
 if [ ! $? -eq 0 ]; then
-	echo "Your locale is not UTF-8, "
-	echo "please define the flac/ape file name followed the <cuefile>."
+	echo -e ${red}"Your locale is not UTF-8, "
+	echo -e "Be sure to define the flac/ape file name followed the <cuefile>."${clr_normal}
 fi
 
 ######################################################
