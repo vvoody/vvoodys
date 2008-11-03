@@ -135,7 +135,7 @@ fi
 
 echo -e ${yellow}"extract info from the cue file..."${clr_normal}
 
-if [ sndfile_flag -eq 0 ]; then
+if [ $sndfile_flag -eq 0 ]; then
 	sndfile=`egrep '^FILE' "$cuefile" | awk -F'"' '{print $2}'`
 	# According to http://digitalx.org/cuesheetsyntax.php ,
 	# the file name may not be enclosed  in quotation marks.
