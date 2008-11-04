@@ -55,7 +55,7 @@ if ! locale | egrep -q "^LC_CTYPE.*(UTF|utf)-8(\")?$"; then
 fi
 
 # make sure we have write permission in the PWD
-PWD=`pwd`
+PWD=$(pwd)
 if [ ! -w "$PWD" ]; then
 	echo -e ${red}"I don't have write permission in ${PWD} ."${clr_normal}
 	exit 1
@@ -142,11 +142,11 @@ fi
 echo -e ${yellow}"extract info from the cue file..."${clr_normal}
 
 if [ $sndfile_flag -eq 0 ]; then
-	sndfile=`egrep '^FILE' "$cuefile" | awk -F'"' '{print $2}'`
+	sndfile=$(egrep '^FILE' "$cuefile" | awk -F'"' '{print $2}')
 	# According to http://digitalx.org/cuesheetsyntax.php ,
 	# the file name may not be enclosed  in quotation marks.
 	if [ -z "$sndfile" ]; then
-		sndfile=`egrep '^FILE' "$cuefile" | awk -F' ' '{print $2}'`
+		sndfile=$(egrep '^FILE' "$cuefile" | awk -F' ' '{print $2}')
 	fi
 fi
 if [ ! -r "$sndfile" ]; then
@@ -161,13 +161,13 @@ genre=$(cueprint -d '%G' "$cuefile")
 # many cue sheets put the genre and date info into REM section(the comment section),
 # we can grab the info in this way.
 if [ -z $genre ]; then
-	genre=`egrep '^REM GENRE ' "$cuefile" | cut -c 11-`
+	genre=$(egrep '^REM GENRE ' "$cuefile" | cut -c 11-)
 fi
 # cueprint can't grap date info in cue sheets...
-date=`egrep '^REM DATE ' "$cuefile" | cut -c 10-`
+date=$(egrep '^REM DATE ' "$cuefile" | cut -c 10-)
 
 # extract comments
-comments=`egrep '^REM ' "$cuefile" | sed -e '/^REM GENRE/d; /^REM DATE/d; s/REM //; s/ /=/'`
+comments=$(egrep '^REM ' "$cuefile" | sed -e '/^REM GENRE/d; /^REM DATE/d; s/REM //; s/ /=/')
 
 # Store the idv3 info. We will write them to the mp3s later.
 id3count=1
@@ -197,7 +197,7 @@ if [ $quiet -eq 0 ]; then
 fi
 # Split and convert the single ape/flac file.
 # Each mp3 name is like: "07.Yesterday Once More.mp3"
-# More output format, see `man shntool`
+# More output format, see man shntool
 # \:*?"<>|/ are invalid filename characters in DOS,
 # / is invalid filename character in UNIX. So convert them or we couldn't split the file.
 echo -e ${yellow}"split and convert ${blue}$sndfile"${clr_normal}
