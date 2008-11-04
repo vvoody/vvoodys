@@ -49,8 +49,7 @@ blue='\e[0;34;1m'
 clr_normal='\e[0m'
 
 # work around for issue1&2
-locale | egrep ^LC_CTYPE | egrep -i "UTF-8" > /dev/null
-if [ ! $? -eq 0 ]; then
+if ! locale | egrep -q "^LC_CTYPE.*(UTF|utf)-8(\")?$"; then
 	echo -e ${red}"Your locale is not UTF-8, "
 	echo -e "Be sure to define the flac/ape file name followed the <cuefile>."${clr_normal}
 fi
@@ -128,7 +127,7 @@ esac
 ######################################################
 if [ ! -r "$cuefile" ]; then
 	echo_usage
-	echo -e ${red}"${cuefile} not found or I don't have read permission!"${clr_normal}
+	echo -e ${red}"cuesheet ${cuefile} not found or I don't have read permission!"${clr_normal}
 	exit 1
 fi
 
@@ -151,7 +150,7 @@ if [ $sndfile_flag -eq 0 ]; then
 	fi
 fi
 if [ ! -r "$sndfile" ]; then
-	echo -e ${red}"${sndfile} not found or I don't have read permission!"${clr_normal}
+	echo -e ${red}"CD image ${sndfile} not found or I don't have read permission!"${clr_normal}
 	exit 1
 fi
 
