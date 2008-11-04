@@ -119,6 +119,11 @@ esac
 ######################################################
 # parameter parse finished, we can begin the work now ;)
 ######################################################
+if [ ! -r "$cuefile" ]; then
+	echo_usage
+	echo -e ${red}"${cuefile} not found or I don't have read permission!"${clr_normal}
+	exit 1
+fi
 
 if file "$cuefile" | egrep -q 'UTF-8|ASCII'; then
 	rm_ufile=0
@@ -137,6 +142,10 @@ if [ $sndfile_flag -eq 0 ]; then
 	if [ -z "$sndfile" ]; then
 		sndfile=`egrep '^FILE' "$cuefile" | awk -F' ' '{print $2}'`
 	fi
+fi
+if [ ! -r "$sndfile" ]; then
+	echo -e ${red}"${sndfile} not found or I don't have read permission!"${clr_normal}
+	exit 1
 fi
 
 tracks=$(cueprint -d '%N' "$cuefile")
