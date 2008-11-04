@@ -55,6 +55,13 @@ if [ ! $? -eq 0 ]; then
 	echo -e "Be sure to define the flac/ape file name followed the <cuefile>."${clr_normal}
 fi
 
+# make sure we have write permission in the PWD
+PWD=`pwd`
+if [ ! -w "$PWD" ]; then
+	echo -e ${red}"I don't have write permission in ${PWD} ."${clr_normal}
+	exit 1
+fi
+
 ######################################################
 # parameter parse begin
 ######################################################
