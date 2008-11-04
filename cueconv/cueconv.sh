@@ -49,12 +49,7 @@ blue='\e[0;34;1m'
 clr_normal='\e[0m'
 
 # work around for issue1&2
-# FIXME: maybe `locale | egrep -i "UTF-8"` is not enough.
-# see this situation:
-# LC_ALL="zh_CN.GB18030"
-# LC_TIME="zh_CN.UTF-8"
-# we have to find out which LC realy matters....
-locale | egrep -i "UTF-8" > /dev/null
+locale | egrep ^LC_CTYPE | egrep -i "UTF-8" > /dev/null
 if [ ! $? -eq 0 ]; then
 	echo -e ${red}"Your locale is not UTF-8, "
 	echo -e "Be sure to define the flac/ape file name followed the <cuefile>."${clr_normal}
