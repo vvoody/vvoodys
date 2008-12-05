@@ -131,7 +131,8 @@ if [ ! -r "$cuefile" ]; then
 	exit 1
 fi
 
-if file "$cuefile" | egrep -q 'UTF-8|ASCII'; then
+# Changed following line, see Issues No.6
+if file "$cuefile" | egrep -q 'UTF-8'; then
 	rm_ufile=0
 else
 	iconv -f GB18030 -t UTF-8 "$cuefile" -o "${cuefile}-u.cue"
