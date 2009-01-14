@@ -232,11 +232,15 @@ for outfile in *.$ext; do
 		echo 
 	fi
 	if [ $ext = 'mp3' ]; then
-		# 		mid3v2 --artist="${artist[$acount]}" \
-		# 		--album="${album[acount]}" \
-		# 		--track="${tracknum[acount]}" \
-		# 		--song="${title[acount]}" \
-		# 		"$outfile"
+		# Uncomment the one which your system has.
+		#mid3v2 \
+		#--artist="${artist[$acount]}" \
+		#--album="${album[acount]}" \
+		#--track="${tracknum[acount]}" \
+		#--song="${title[acount]}" \
+		#--genre="${genre}" \
+		#--year="${date}" \
+		#"$outfile"
 		id3tag 1>/dev/null \
 		--artist="${artist[$acount]}" \
 		--album="${album[acount]}" \
