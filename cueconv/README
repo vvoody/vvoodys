@@ -1,9 +1,0 @@
-Make sure your system has the following utils:
-  * mac
-  * flac
-  * lame
-  * cuetools
-  * id3v2(or mutagen)
-  * shntool
-  * vorbis-tools(for OGG)
-
