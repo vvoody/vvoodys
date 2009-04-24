@@ -15,7 +15,7 @@
 echo_usage()
 {
 	echo
-	echo "usage: $0 [option] [encoding_type [encoding_options]] <cuefile> [flac_or_ape_file]"
+	echo "usage:" $(basename $0) "[option] [encoding_type [encoding_options]] <cuefile> [flac_or_ape_file]"
 	echo 
 	echo "option:"
 	echo "    -q: be quiet"
